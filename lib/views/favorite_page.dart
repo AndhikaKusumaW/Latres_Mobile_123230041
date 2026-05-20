@@ -1,41 +1,175 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/favorite_controller.dart';
-import 'detail_page.dart';
+import '../routes/app_routes.dart';
 
-class FavoritePage extends StatelessWidget {
-  final FavoriteController favC = Get.put(FavoriteController());
+class FavoritePageView extends StatelessWidget {
+  const FavoritePageView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(FavoriteController());
+
     return Scaffold(
-      appBar: AppBar(title: Text('Daftar Favorit'), backgroundColor: Colors.black),
-      body: Obx(() {
-        if (favC.favoriteList.isEmpty) return Center(child: Text("Belum ada favorit"));
-        return ListView.builder(
-          itemCount: favC.favoriteList.length,
-          itemBuilder: (context, index) {
-            final show = favC.favoriteList[index];
-            return ListTile(
-              onTap: () => Get.to(() => DetailPage(showId: show.id)), // Ke detail show [cite: 34]
-              leading: CachedNetworkImage(imageUrl: show.imageUrl, width: 50, fit: BoxFit.cover),
-              title: Text(show.name),
-              subtitle: Row(
-                children: [
-                  Icon(Icons.star, color: Colors.amber, size: 14),
-                  SizedBox(width: 4),
-                  Text(show.rating.toString()),
-                ],
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                'Daftar Favorit',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              trailing: IconButton(
-                icon: Icon(Icons.delete, color: Colors.red),
-                onPressed: () => favC.toggleFavorite(show), // Dihapus [cite: 33]
-              ),
-            );
-          },
-        );
-      }),
+            ),
+            Expanded(
+              child: Obx(() {
+                final items = controller.items;
+                if (items.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Belum ada favorit',
+                      style: TextStyle(color: Colors.grey.shade400),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final id = (item['id'] ?? '').toString();
+                    final title = (item['title'] ?? '').toString();
+                    final rating = (item['rating'] ?? '-').toString();
+                    final imageUrl = (item['imageUrl'] ?? '').toString();
+
+                    return Material(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          final showId = int.tryParse(id);
+                          if (showId == null) {
+                            Get.snackbar(
+                              'Tidak bisa buka detail',
+                              'ID film tidak valid',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: const Color(0xFFE53C30),
+                              colorText: Colors.white,
+                              margin: const EdgeInsets.all(10),
+                              duration: const Duration(seconds: 2),
+                            );
+                            return;
+                          }
+                          Get.toNamed(AppRoutes.detail, arguments: showId);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: imageUrl.isEmpty
+                                    ? Container(
+                                        width: 48,
+                                        height: 64,
+                                        color: const Color(0xFF2A2A2A),
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey,
+                                          size: 18,
+                                        ),
+                                      )
+                                    : Image.network(
+                                        imageUrl,
+                                        width: 48,
+                                        height: 64,
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          size: 14,
+                                          color: Colors.amber,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          rating,
+                                          style: TextStyle(
+                                            color: Colors.grey.shade300,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => controller.deleteById(id, title),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Color(0xFFE53C30),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.black,
+        selectedItemColor: const Color(0xFFE53C30),
+        unselectedItemColor: Colors.grey.shade500,
+        currentIndex: 1,
+        onTap: (index) {
+          if (index == 0) {
+            Get.offAllNamed(AppRoutes.home);
+          } else if (index == 2) {
+            Get.offAllNamed(AppRoutes.profile);
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_filled),
+            label: 'Beranda',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorit'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        ],
+      ),
     );
   }
 }

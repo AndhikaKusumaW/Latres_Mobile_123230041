@@ -1,170 +1,187 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../controllers/show_controller.dart';
-import '../controllers/favorite_controller.dart';
+import '../controllers/detail_controller.dart';
 
-class DetailPage extends StatelessWidget {
-  final int showId;
-  DetailPage({required this.showId});
-
-  final ShowController showC = Get.find();
-  final FavoriteController favC = Get.put(FavoriteController());
+class DetailPageView extends StatelessWidget {
+  const DetailPageView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Fetch detail show saat halaman dibuka
-    showC.getShowDetail(showId);
+    final controller = Get.put(DetailController());
 
     return Scaffold(
-      backgroundColor: Colors.black, // Background gelap
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text('Detail', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black,
         elevation: 0,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.white), // Tombol back warna putih
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Get.back(),
+        ),
+        title: const Text(
+          'Detail',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Obx(() {
-        if (showC.isDetailLoading.value) {
-          return Center(child: CircularProgressIndicator(color: Colors.red));
+        if (controller.isLoading.value) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
 
-        final show = showC.showDetail.value;
-        if (show == null) {
-          return Center(child: Text("Data tidak ditemukan", style: TextStyle(color: Colors.white)));
+        if (controller.errorMessage.value.isNotEmpty) {
+          return Center(
+            child: Text(
+              controller.errorMessage.value,
+              style: TextStyle(color: Colors.grey.shade400),
+            ),
+          );
         }
 
-        // KUNCI AGAR ICON REAKTIF: Mengecek apakah film ada di dalam daftar favorit
-        // Karena diletakkan di dalam Obx, UI akan langsung refresh saat nilai favoriteList berubah
-        bool isFav = favC.favoriteList.any((element) => element.id == show.id);
+        final imageUrl = controller.imageUrl;
 
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Gambar dengan Efek Gradient Hitam di Bawahnya
-              Stack(
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: show.imageUrl,
-                    fit: BoxFit.cover,
-                    height: 480,
-                    width: double.infinity,
+              ClipRRect(
+                child: imageUrl == null
+                    ? Container(
+                        color: const Color(0xFF2A2A2A),
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      )
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.fill,
+                        width: double.infinity,
+                        height: 500,
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text(
+                  controller.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
                   ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 120,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [Colors.black, Colors.transparent],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, size: 16, color: Colors.amber),
+                    const SizedBox(width: 6),
+                    Text(
+                      controller.rating,
+                      style: TextStyle(color: Colors.grey.shade300),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        controller.genresText.isEmpty
+                            ? '-'
+                            : controller.genresText,
+                        style: TextStyle(color: Colors.grey.shade400),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Get.snackbar(
+                              'Memutar Film',
+                              'Selamat menonton ${controller.title}!',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: const Color(0xFFE53C30),
+                              colorText: Colors.white,
+                              icon: const Icon(
+                                Icons.play_circle_fill,
+                                color: Colors.white,
+                              ),
+                              margin: const EdgeInsets.all(10),
+                              duration: const Duration(seconds: 2),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE53C30),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.play_arrow),
+                              SizedBox(width: 8),
+                              Text('Nonton'),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  )
-                ],
-              ),
-              
-              // 2. Konten Teks & Tombol
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(show.name, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
-                    SizedBox(height: 8),
-                    
-                    // Rating
-                    Row(
-                      children: [
-                        Icon(Icons.star, color: Colors.amber, size: 18),
-                        SizedBox(width: 4),
-                        Text(show.rating.toString(), style: TextStyle(fontSize: 14, color: Colors.white)),
-                      ],
-                    ),
-                    SizedBox(height: 6),
-                    
-                    // Genre
-                    Text(show.genres.join(', '), style: TextStyle(color: Colors.grey[400], fontSize: 14)),
-                    
-                    SizedBox(height: 16),
-                    
-                    // 3. Tombol Nonton & Favorit Berdampingan
-                    Row(
-                      children: [
-                        // TOMBOL NONTON
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            onPressed: () {
-                              // Notifikasi Nonton
-                              Get.snackbar(
-                                'Memutar film',
-                                'Selamat menonton',
-                                snackPosition: SnackPosition.BOTTOM,
-                                backgroundColor: Colors.red,
-                                colorText: Colors.white,
-                                margin: EdgeInsets.all(16),
-                              );
-                            },
-                            icon: Icon(Icons.play_arrow),
-                            label: Text('Nonton', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 12),
+                    Obx(() {
+                      final isFavorite = controller.isFavorite.value;
+                      return InkWell(
+                        onTap: controller.toggleFavorite,
+                        borderRadius: BorderRadius.circular(22),
+                        child: Container(
+                          height: 44,
+                          width: 44,
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 36, 36, 36),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: isFavorite
+                                ? const Color(0xFFE53C30)
+                                : Colors.white,
                           ),
                         ),
-                        SizedBox(width: 12), // Jarak antar tombol
-                        
-                        // TOMBOL FAVORIT
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Color(0xFF1E1E1E), // Warna kotak abu-abu gelap
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                              isFav ? Icons.favorite : Icons.favorite_border,
-                              color: isFav ? Colors.red : Colors.white, // Langsung merah jika disukai
-                            ),
-                            onPressed: () {
-                              favC.toggleFavorite(show);
-                              // Notifikasi berhasil masuk favorit
-                              Get.snackbar(
-                                !isFav ? 'Berhasil' : 'Dihapus',
-                                !isFav ? 'Film berhasil ditambahkan' : 'Film dihapus dari favorite',
-                                snackPosition: SnackPosition.TOP,
-                                backgroundColor: !isFav ? Colors.green : Colors.grey[800],
-                                colorText: Colors.white,
-                                duration: Duration(seconds: 1),
-                              );
-                            },
-                          ),
-                        )
-                      ],
-                    ),
-                    
-                    SizedBox(height: 24),
-                    
-                    // 4. Overview
-                    Text('Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                    SizedBox(height: 8),
-                    Text(
-                      show.summary, 
-                      style: TextStyle(fontSize: 14, height: 1.5, color: Colors.grey[350]),
-                      textAlign: TextAlign.justify,
-                    ),
-                    SizedBox(height: 40), 
+                      );
+                    }),
                   ],
                 ),
-              )
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 6),
+                child: Text(
+                  'Overview',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                child: Text(
+                  controller.summary.isEmpty ? '-' : controller.summary,
+                  style: TextStyle(color: Colors.grey.shade300, height: 1.5),
+                ),
+              ),
             ],
           ),
         );

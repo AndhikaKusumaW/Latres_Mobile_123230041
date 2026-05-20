@@ -1,38 +1,51 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:hive/hive.dart';
-import '../models/show_model.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class FavoriteController extends GetxController {
-  final String boxName = 'favoritesBox';
-  var favoriteList = <Show>[].obs;
+  final items = <Map<String, dynamic>>[].obs;
+
+  late final Box<Map> _box;
+  VoidCallback? _boxListener;
 
   @override
   void onInit() {
-    loadFavorites();
     super.onInit();
+    _box = Hive.box<Map>('favorites');
+    _syncItems();
+    _boxListener = () => _syncItems();
+    _box.listenable().addListener(_boxListener!);
   }
 
-  void loadFavorites() {
-    var box = Hive.box(boxName);
-    var list = box.values.map((e) {
-      final map = Map<String, dynamic>.from(e);
-      return Show.fromJson(map);
-    }).toList();
-    favoriteList.assignAll(list);
-  }
-
-  void toggleFavorite(Show show) {
-    var box = Hive.box(boxName);
-    if (box.containsKey(show.id)) {
-      box.delete(show.id); // Hapus favorit [cite: 33]
-    } else {
-      box.put(show.id, show.toJson()); // Tambah favorit [cite: 28]
+  @override
+  void onClose() {
+    if (_boxListener != null) {
+      _box.listenable().removeListener(_boxListener!);
     }
-    loadFavorites();
+    super.onClose();
   }
 
-  bool isFavorite(int id) {
-    var box = Hive.box(boxName);
-    return box.containsKey(id);
+  void deleteById(String id, String title) {
+    _box.delete(id);
+    Get.snackbar(
+      'Favorit Dihapus',
+      'Film dengan $id bernama $title telah dihapus dari daftar favorit',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(10),
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  void _syncItems() {
+    final keys = _box.keys.toList().cast<String>();
+    final data = <Map<String, dynamic>>[];
+    for (final key in keys) {
+      final item = Map<String, dynamic>.from(_box.get(key) ?? {});
+      item['id'] = key;
+      data.add(item);
+    }
+    items.assignAll(data);
   }
 }
