@@ -40,7 +40,6 @@ class LoginpageView extends StatelessWidget {
               
               // TOMBOL LOGIN DINAMIS
               Obx(() => ElevatedButton(
-                // Tombol di-disable (null) jika sedang loading agar tidak bisa dispam
                 onPressed: controller.isLoading.value 
                     ? null 
                     : () => controller.login(),
@@ -51,7 +50,7 @@ class LoginpageView extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  disabledBackgroundColor: Colors.grey.shade800, // Warna kusam saat loading
+                  disabledBackgroundColor: Colors.grey.shade800,
                 ),
                 child: controller.isLoading.value
                     ? const SizedBox(
