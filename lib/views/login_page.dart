@@ -37,18 +37,33 @@ class LoginpageView extends StatelessWidget {
               const SizedBox(height: 20),
               _passwordTextField(controller),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => controller.login(),
+              
+              // TOMBOL LOGIN DINAMIS
+              Obx(() => ElevatedButton(
+                // Tombol di-disable (null) jika sedang loading agar tidak bisa dispam
+                onPressed: controller.isLoading.value 
+                    ? null 
+                    : () => controller.login(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 229, 60, 48),
                   foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
+                  disabledBackgroundColor: Colors.grey.shade800, // Warna kusam saat loading
                 ),
-                child: Text("Login"),
-              ),
+                child: controller.isLoading.value
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : const Text("Login", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              )),
             ],
           ),
         ),

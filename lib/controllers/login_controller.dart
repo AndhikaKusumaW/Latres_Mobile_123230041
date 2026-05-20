@@ -7,9 +7,8 @@ class LoginController extends GetxController {
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
   final RxBool obscurePassword = true.obs;
-
-  static const String correctUsername = 'Andhika';
-  static const String correctPassword = '123230041';
+  
+  final RxBool isLoading = false.obs; 
 
   @override
   void onInit() {
@@ -31,26 +30,26 @@ class LoginController extends GetxController {
 
     if (username.isEmpty || password.isEmpty) {
       Get.snackbar(
-        'Error',
+        'Oops!',
         'Username dan password harus diisi!',
         snackPosition: SnackPosition.BOTTOM,
-        colorText: null,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(10),
       );
       return;
     }
+    
+    isLoading.value = true;
 
-    if (username == correctUsername && password == correctPassword) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('username', username);
-      Get.offAllNamed(AppRoutes.home);
-    } else {
-      Get.snackbar(
-        'Error',
-        'Username atau password salah!',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    }
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('username', username);
+    
+    isLoading.value = false;
+    Get.offAllNamed(AppRoutes.home);
   }
 
   void togglePasswordVisibility() {
